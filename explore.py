@@ -1,10 +1,12 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 import numpy as np
-
+from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
-
+from sklearn.metrics import mean_absolute_error
 train_data = pd.read_csv("data/train.csv")
+
+# transform_data(input_data)
 magshield_data = pd.read_csv("data/magnetic_shielding_tensors.csv")
 dipole_data = pd.read_csv("data/dipole_moments.csv")
 pe_data = pd.read_csv("data/potential_energy.csv")
@@ -41,27 +43,50 @@ for cat_name in catagorical_col_names:
     train_data = train_data.drop([cat_name], axis=1)
     # train_data.drop(columns=[cat_name])
 
-
+train_data = train_data.drop(['id','molecule_name'], axis=1)
 
 #train encoders and do the tranformations
-enc = OneHotEncoder(handle_unknown='ignore')
+enc = OneHotEncoder(handle_unknown='ignore', sparse=False)
 
 cat_array = enc.fit_transform(cat_df.values)
 
 #convert to numpy array and join with the df that has the numerical train data
 y_df = train_data[['scalar_coupling_constant']]
-
-
-
 train_data = train_data.drop(['scalar_coupling_constant'], axis=1)
 
-full_train_data = np.concatenate(train_data.values, cat_array, axis=0)
 
-# full_train_data
+for i,feature in enumerate(enc.get_feature_names().tolist()):
+    print(feature)
+    train_data[feature] = cat_array[:,i]
 
+
+
+
+
+# full_train_data = np.concatenate([train_data.values, cat_array], axis=1)
+
+# train_data.drop
+
+
+X_train, X_test, y_train, y_test = train_test_split(train_data.values[:50000,:], y_df.values[:50000,:], test_size=0.33, random_state=36)
+
+print(X_train.shape)
 #set up model/s
+
+model = MLPRegressor(hidden_layer_sizes=(100,100),verbose=True)
 
 #train with 10 fold cross validation or possible separate out a validation set
 
+model.fit(X_train, y_train)
 
+preds = model.predict(X_test)
+
+
+mae = mean_absolute_error(y_test, preds)
+
+log_mae = np.log(mae)
+
+mean_log_mae = np.mean(log_mae)
+
+print(mean_log_mae)
 print('a')
