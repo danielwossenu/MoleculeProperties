@@ -6,6 +6,8 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error
 train_data = pd.read_csv("data/train.csv")
 
+# ALLLLLL the data additions are messed up. need to do left joins using the data. this is why I end up with NA, cause it's just adding columns, not joining.
+# train_data.merge(magshield_data, how='left', on=['molecule_name'])
 def transform_data(input_data, encoder=None):
     magshield_data = pd.read_csv("data/magnetic_shielding_tensors.csv")
     dipole_data = pd.read_csv("data/dipole_moments.csv")
@@ -62,13 +64,13 @@ def transform_data(input_data, encoder=None):
         input_data[feature] = cat_array[:,i]
 
 
-    return input_data
+    return input_data, encoder
 
 
 # full_train_data = np.concatenate([train_data.values, cat_array], axis=1)
 
 # train_data.drop
-train_data = transform_data(train_data)
+train_data, fitted_encoder = transform_data(train_data)
 #convert to numpy array and join with the df that has the numerical train data
 y_df = train_data[['scalar_coupling_constant']]
 train_data = train_data.drop(['scalar_coupling_constant'], axis=1)
@@ -94,3 +96,16 @@ mean_log_mae = np.mean(log_mae)
 
 print(mean_log_mae)
 print('a')
+
+
+test_data = pd.read_csv("data/test.csv")
+
+test_data_out, fitted_encoder = transform_data(test_data, fitted_encoder)
+
+test_preds = model.predict(test_data_out.values)
+
+submission = pd.read_csv("data/sample_submission.csv")
+
+submission["scalar_coupling_constant"] = test_preds
+
+submission.to_csv("real_submission.csv")
